@@ -1,4 +1,4 @@
-package ru.dmitriev.MySecondTestAppSpringBoot.model;
+package ru.dmitriev.MyThirdTestAppSpringBoot.model;
 
 import lombok.Getter;
 

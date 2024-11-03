@@ -1,9 +1,8 @@
-package ru.dmitriev.MySecondTestAppSpringBoot.controller;
+package ru.dmitriev.MyThirdTestAppSpringBoot.controller;
 
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,13 +11,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import ru.dmitriev.MySecondTestAppSpringBoot.exception.UnsupportedCodeException;
-import ru.dmitriev.MySecondTestAppSpringBoot.exception.ValidationFailedException;
-import ru.dmitriev.MySecondTestAppSpringBoot.model.*;
-import ru.dmitriev.MySecondTestAppSpringBoot.service.*;
-import ru.dmitriev.MySecondTestAppSpringBoot.util.DateTimeUtil;
+import ru.dmitriev.MyThirdTestAppSpringBoot.exception.UnsupportedCodeException;
+import ru.dmitriev.MyThirdTestAppSpringBoot.exception.ValidationFailedException;
+import ru.dmitriev.MyThirdTestAppSpringBoot.model.*;
+import ru.dmitriev.MyThirdTestAppSpringBoot.service.ModifyResponseService;
+import ru.dmitriev.MyThirdTestAppSpringBoot.service.ValidationService;
+import ru.dmitriev.MyThirdTestAppSpringBoot.util.DateTimeUtil;
 
-import java.text.SimpleDateFormat;
+import java.text.ParseException;
 import java.util.Date;
 
 @Slf4j
@@ -26,21 +26,24 @@ import java.util.Date;
 public class MyController {
     private final ValidationService validationService;
     private final ModifyResponseService modifyResponseService;
-    private final ModifyRequestService modifyRequestService;
 
-    @Autowired
-    public MyController(ValidationService validationService,
-                        @Qualifier("ModifyOperationUidResponseService") ModifyOperationUidResponseService modifyOperationUidResponseService,
-                        ModifyDataRequestService modifyDataRequestService) {
+    public MyController(ValidationService validationService, @Qualifier("ModifySystemTimeResponseService") ModifyResponseService modifyResponseService) {
+
         this.validationService = validationService;
-        this.modifyResponseService = modifyOperationUidResponseService;
-        this.modifyRequestService = modifyDataRequestService;
+        this.modifyResponseService = modifyResponseService;
     }
 
     @PostMapping(value = "/feedback")
     public ResponseEntity<Response> feedback(@Valid @RequestBody Request request, BindingResult bindingResult) {
 
         log.info("Request: {}", request);
+
+        String systemTimeNow = DateTimeUtil.getCustomFormat().format(new Date());
+        try {
+            log.info("Время от отправки запроса из Postman до вывода в лог сервиса 2: {} мс", DateTimeUtil.getPassedTime(request.getSystemTime(), systemTimeNow));
+        } catch (ParseException e) {
+            log.error("Parse exception {} при запросе {}", e.getMessage(), request);
+        }
 
         Response response = Response.builder()
                     .uid(request.getUid())
@@ -72,9 +75,8 @@ public class MyController {
             response.setErrorMessage(ErrorMessages.UNKNOWN);
             return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
         }
+        modifyResponseService.modify(response);
 
-        response = modifyResponseService.modify(response);
-        modifyRequestService.modify(request);
         log.info("Fine-response: {}", response);
 
         return new ResponseEntity<>(response, HttpStatus.OK);
